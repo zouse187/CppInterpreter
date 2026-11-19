@@ -73,8 +73,7 @@ public class CppLexer {
 
       if (source.charAt(current) == '/' && source.charAt(current + 1) == '/') {
         // Wenn ein kommentar kommt, wird der ganze Rest der Zeile geskippt.
-        while (!isAtEnd())
-            advance();
+        while (!isAtEnd()) advance();
       }
     }
   }
