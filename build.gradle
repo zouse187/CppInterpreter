@@ -1,0 +1,78 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.diffplug.spotless' version '8.11.0'
+    id 'antlr'
+    id 'idea'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:6.1.3')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    antlr 'org.antlr:antlr4:4.13.2'
+    implementation 'org.antlr:antlr4-runtime:4.13.2'
+}
+
+// use current Long-Term Support (LTS) release
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 25
+}
+
+
+// ANTLR and IntelliJ
+def antlrGenDir = layout.buildDirectory.dir('generated-src/antlr/main')
+
+sourceSets {
+    main {
+        java.srcDir(antlrGenDir)
+    }
+}
+
+tasks.named('generateGrammarSource') {
+    maxHeapSize = '64m'
+    arguments.addAll(['-visitor', '-listener', '-long-messages'])
+    outputDirectory = antlrGenDir.get().asFile
+}
+
+idea {
+    module {
+        generatedSourceDirs += antlrGenDir.get().asFile
+    }
+}
+
+
+application {
+    // TODO: Define your main class here
+    mainClass = 'Main'
+}
+
+
+tasks.named('run') {
+    standardInput = System.in
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+spotless {
+    java {
+        googleJavaFormat().reflowLongStrings()
+
+        target '**/*.java'
+        targetExclude('build/generated-src/**')
+    }
+}
