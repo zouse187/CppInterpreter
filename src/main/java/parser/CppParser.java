@@ -6,7 +6,6 @@ import expr.AddExpr;
 import expr.Expr;
 import expr.IntLiteral;
 import expr.SubExpr;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import token.Token;
@@ -16,6 +15,7 @@ public class CppParser {
   protected List<Token> tokens;
   protected int current;
 
+  // Cint ::= expr EOF
   public Expr parse(List<Token> tokenList) {
     tokens = tokenList;
     current = 0;
@@ -27,70 +27,50 @@ public class CppParser {
     return expr;
   }
 
+  // expr ::= primary ((op) primary)*
   protected Expr parseExpr() {
     // expr ::= INT | expr op expr | '(' expr ')'
     // op   ::= '+' | '-'
     // INT  ::= [0-9]+
     // Cint ::= expr EOF
-    if (check(LPAREN)) {
-      return parseExprParen();
-    }
 
-    if (peek(1).kind() == PLUS || peek(1).kind() == MINUS) {
-      return switch (peek(1).kind()) {
-        case PLUS -> parseAddExpr();
-        case MINUS -> parseSubExpr();
+    // expr    ::= primary ((op) primary)*
+    // primary ::= INT | '(' expr ')'
+    // op      ::= '+' | '-'
+    // INT     ::= [0-9]+
+    // Cint    ::= expr EOF
+
+    Expr expr = parsePrimary();
+
+    while (check(PLUS, MINUS)) {
+      Token op = match(PLUS, MINUS);
+      Expr right = parsePrimary();
+      switch (op.kind()) {
+        case PLUS -> expr = new AddExpr(expr, right);
+        case MINUS -> expr = new SubExpr(expr, right);
         default ->
             throw new RuntimeException("Parse Error in parseExpr(): unexpected token: " + peek());
-      };
+      }
     }
 
-    return parseInt();
+    return expr;
   }
 
-  protected Expr parseExprParen() {
-    match(LPAREN);
-    List<Expr> ops = new ArrayList<>();
-    ops.add(parseExpr());
-    while (check(PLUS) || check(MINUS)) {
-      if (check(PLUS)) match(PLUS);
-      if (check(MINUS)) match(MINUS);
-      ops.add(parseExpr());
-    }
-    match(RPAREN);
-
-    //            hier muss Add oder Sub rein! wie? Vllt anderer Stream
-    //                           |
-    return ops.stream().reduce(AddExpr::new).orElseThrow();
-  }
-
-  protected Expr parseInt() {
-    Token t = match(INT);
-    return new IntLiteral(Integer.parseInt(t.lexeme()));
-  }
-
-  protected Expr parseAddExpr() {
-    List<Expr> ops = new ArrayList<>();
-    ops.add(parseInt());
-
-    while (check(PLUS)) {
-      match(PLUS);
-      ops.add(parseExpr());
+  // primary ::= INT | '(' expr ')'
+  protected Expr parsePrimary() {
+    if (check(INT)) {
+      Token t = match(INT);
+      return new IntLiteral(Integer.parseInt(t.lexeme()));
     }
 
-    return ops.stream().reduce(AddExpr::new).orElseThrow();
-  }
-
-  protected Expr parseSubExpr() {
-    List<Expr> ops = new ArrayList<>();
-    ops.add(parseInt());
-
-    while (check(MINUS)) {
-      match(MINUS);
-      ops.add(parseExpr());
+    if (check(LPAREN)) {
+      match(LPAREN);
+      Expr expr = parseExpr();
+      match(RPAREN);
+      return expr;
     }
 
-    return ops.stream().reduce(SubExpr::new).orElseThrow();
+    throw new RuntimeException("Parse Error in parsePrimary(): unexpected token: " + peek());
   }
 
   protected boolean isAtEnd() {

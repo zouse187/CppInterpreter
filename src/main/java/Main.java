@@ -16,16 +16,18 @@ public class Main {
     // INT  ::= [0-9]+
     // Cint ::= expr EOF
 
+    // expr    ::= primary ((op) primary)*
+    // primary ::= INT | '(' expr ')'
+    // op      ::= '+' | '-'
+    // INT     ::= [0-9]+
+    // Cint    ::= expr EOF
+
     // Expr = IntLiteral(Int) | AddExpr(Expr, Expr) | SubExpr(Expr, Expr)
     // Lint = Expr
 
-    // 10 - 5 + 2 = 7: Interpreter sagt 3
-    // ((1 + 2) - (3 + 4)) = -4: Interpreter sagt 4
-    // Bei einem ' ' am Ende kommt ein "index out of bounds" fehler
+    String source = "((1 + 2) - (3 + 4) + 5)  ";
 
-    String source3 = "((1 + 2) - (3 + 4))";
-
-    List<Token> tokens = new CppLexer().scan(source3);
+    List<Token> tokens = new CppLexer().scan(source);
     Expr ast = new CppParser().parse(tokens);
 
     Value result = new CppInterpreter().eval(ast);
