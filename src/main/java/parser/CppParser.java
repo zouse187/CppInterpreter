@@ -15,10 +15,14 @@ import token.TokenKind;
 public class CppParser {
     protected List<Token> tokens;
     protected int current;
+    protected int peek_counter;
+    protected int check_paren_counter;
 
     public Expr parse(List<Token> tokenList) {
         tokens = tokenList;
         current = 0;
+        peek_counter = 1;
+        check_paren_counter = 0;
 
         Expr expr = parseExpr();
         if (!isAtEnd())
@@ -32,18 +36,17 @@ public class CppParser {
         // op   ::= '+' | '-'
         // INT  ::= [0-9]+
         // Cint ::= expr EOF
-
-        if (check(LPAREN)) {
-            return switch (peek(2).kind()) {
-                case PLUS -> parseAddExprParen();
-                case MINUS -> parseSubExprParen();
-                case RPAREN -> parseIntParen();
-                default ->
-                    throw new RuntimeException("Parse Error in parseExpr() in if: unexpected token: " + peek());
-            };
+        while (check(LPAREN)) {
+            match(LPAREN);
+            // (((...1 + 2))... - 3)
+            check_paren_counter++;
         }
 
-        return switch (peek(1).kind()) {
+        // (1) + 4 | (3 - 5) - 4
+        if (peek(peek_counter + 1).kind() == PLUS) return parseAddExpr();
+        if (peek(peek_counter + 1).kind() == MINUS) return parseSubExpr();
+
+        return switch (peek(peek_counter).kind()) {
             case PLUS -> parseAddExpr();
             case MINUS -> parseSubExpr();
             case RPAREN, EOF -> parseInt();
@@ -54,17 +57,18 @@ public class CppParser {
 
     protected Expr parseInt() {
         Token t = match(INT);
-        return new IntLiteral(Integer.parseInt(t.lexeme()));
-    }
-
-    protected Expr parseIntParen() {
-        match(LPAREN);
-        Token t = match(INT);
-        match(RPAREN);
+        while (check(RPAREN)) {
+            match(RPAREN);
+        }
         return new IntLiteral(Integer.parseInt(t.lexeme()));
     }
 
     protected Expr parseAddExpr() {
+        if (check_paren_counter >= 2) {
+            for (int i = 1; i < check_paren_counter; i++) {
+                peek_counter++;
+            }
+        }
         List<Expr> ops = new ArrayList<>();
         ops.add(parseInt());
 
@@ -73,24 +77,20 @@ public class CppParser {
             ops.add(parseExpr());
         }
 
-        return ops.stream().reduce(AddExpr::new).orElseThrow();
-    }
-
-    protected Expr parseAddExprParen() {
-        match(LPAREN);
-        List<Expr> ops = new ArrayList<>();
-        ops.add(parseInt());
-
-        while (check(PLUS)) {
-            match(PLUS);
-            ops.add(parseExpr());
+        while (check(RPAREN)) {
+            match(RPAREN);
+            if (check_paren_counter < 2) peek_counter++;
         }
-        match(RPAREN);
 
         return ops.stream().reduce(AddExpr::new).orElseThrow();
     }
 
     protected Expr parseSubExpr() {
+        if (check_paren_counter >= 2) {
+            for (int i = 1; i < check_paren_counter; i++) {
+                peek_counter++;
+            }
+        }
         List<Expr> ops = new ArrayList<>();
         ops.add(parseInt());
 
@@ -99,19 +99,10 @@ public class CppParser {
             ops.add(parseExpr());
         }
 
-        return ops.stream().reduce(SubExpr::new).orElseThrow();
-    }
-
-    protected Expr parseSubExprParen() {
-        match(LPAREN);
-        List<Expr> ops = new ArrayList<>();
-        ops.add(parseInt());
-
-        while (check(MINUS)) {
-            match(MINUS);
-            ops.add(parseExpr());
+        while (check(RPAREN)) {
+            match(RPAREN);
+            peek_counter++;
         }
-        match(RPAREN);
 
         return ops.stream().reduce(SubExpr::new).orElseThrow();
     }

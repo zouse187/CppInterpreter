@@ -24,7 +24,7 @@ public class Main {
       // (1 funktioniert! Soll aber nicht
       // Bei einem ' ' am Ende kommt ein "index out of bounds" fehler
 
-    String source3 = "(1 + (5) - 5)";
+    String source3 = "3 - 5";
 
     List<Token> tokens = new CppLexer().scan(source3);
     Expr ast = new CppParser().parse(tokens);
