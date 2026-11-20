@@ -25,7 +25,7 @@ public class Main {
     // Expr = IntLiteral(Int) | AddExpr(Expr, Expr) | SubExpr(Expr, Expr)
     // Lint = Expr
 
-    String source = "((1 + 2) - (3 + 4) + 5)  ";
+    String source = "4 - 6 + (4 + 3)";
 
     List<Token> tokens = new CppLexer().scan(source);
     Expr ast = new CppParser().parse(tokens);

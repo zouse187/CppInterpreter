@@ -67,11 +67,11 @@ public class CppLexer {
 
   protected void skipIrrelevant() {
     if (!isAtEnd()) {
-      while (source.charAt(current) == ' ') {
-        advance();
-      }
+        if (peek() == ' ') { // Ohne dieses if -> IndexOutOfBoundsException
+            while (peek() == ' ') advance();
+        }
 
-      if (source.charAt(current) == '/' && source.charAt(current + 1) == '/') {
+      if (peek() == '/' && peek(1) == '/') {
         // Wenn ein kommentar kommt, wird der ganze Rest der Zeile geskippt.
         while (!isAtEnd()) advance();
       }
