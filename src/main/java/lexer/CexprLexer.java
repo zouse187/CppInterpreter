@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.function.Predicate;
 import token.Token;
 
-public class CppLexer {
+public class CexprLexer {
 
   protected String source;
   protected int current;
@@ -23,8 +23,6 @@ public class CppLexer {
     return tokens;
   }
 
-  // In Vorlesung wird 'return Token.from(INT, lexeme)' genutzt: warum from und was steht in dieser
-  // Methode
   protected Token nextToken() {
     skipIrrelevant();
 
@@ -37,9 +35,11 @@ public class CppLexer {
       }
       return switch (c) {
         case '(' -> new Token(LPAREN, "(");
+        case ')' -> new Token(RPAREN, ")");
+        case '*' -> new Token(STAR, "*");
+        case '/' -> new Token(SLASH, "/");
         case '+' -> new Token(PLUS, "+");
         case '-' -> new Token(MINUS, "-");
-        case ')' -> new Token(RPAREN, ")");
         default ->
             throw new IllegalStateException(
                 "Lexer Error in nextToken(): Unexpected character: " + c);
@@ -67,9 +67,9 @@ public class CppLexer {
 
   protected void skipIrrelevant() {
     if (!isAtEnd()) {
-        if (peek() == ' ') { // Ohne dieses if -> IndexOutOfBoundsException
-            while (peek() == ' ') advance();
-        }
+      if (peek() == ' ') { // Ohne dieses if -> IndexOutOfBoundsException
+        while (peek() == ' ') advance();
+      }
 
       if (peek() == '/' && peek(1) == '/') {
         // Wenn ein kommentar kommt, wird der ganze Rest der Zeile geskippt.

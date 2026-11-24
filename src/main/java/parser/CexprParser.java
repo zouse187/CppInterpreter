@@ -2,16 +2,13 @@ package parser;
 
 import static token.TokenKind.*;
 
-import expr.AddExpr;
-import expr.Expr;
-import expr.IntLiteral;
-import expr.SubExpr;
+import expr.*;
 import java.util.Arrays;
 import java.util.List;
 import token.Token;
 import token.TokenKind;
 
-public class CppParser {
+public class CexprParser {
   protected List<Token> tokens;
   protected int current;
 
@@ -20,31 +17,20 @@ public class CppParser {
     tokens = tokenList;
     current = 0;
 
-    Expr expr = parseExpr();
+    Expr expr = parseEform();
     if (!isAtEnd())
       throw new RuntimeException("Parse Error in parse(): unexpected token: " + peek());
 
     return expr;
   }
 
-  // expr ::= primary ((op) primary)*
-  protected Expr parseExpr() {
-    // expr ::= INT | expr op expr | '(' expr ')'
-    // op   ::= '+' | '-'
-    // INT  ::= [0-9]+
-    // Cint ::= expr EOF
-
-    // expr    ::= primary ((op) primary)*
-    // primary ::= INT | '(' expr ')'
-    // op      ::= '+' | '-'
-    // INT     ::= [0-9]+
-    // Cint    ::= expr EOF
-
-    Expr expr = parsePrimary();
+  // eform ::= term (('+' | '-')) term)*
+  protected Expr parseEform() {
+    Expr expr = parseTerm();
 
     while (check(PLUS, MINUS)) {
       Token op = match(PLUS, MINUS);
-      Expr right = parsePrimary();
+      Expr right = parseTerm();
       switch (op.kind()) {
         case PLUS -> expr = new AddExpr(expr, right);
         case MINUS -> expr = new SubExpr(expr, right);
@@ -56,18 +42,54 @@ public class CppParser {
     return expr;
   }
 
-  // primary ::= INT | '(' expr ')'
+  // term ::= primary (('*' | '/') primary)*
+  protected Expr parseTerm() {
+    Expr expr = parsePrimary();
+
+    while (check(STAR, SLASH)) {
+      Token op = match(STAR, SLASH);
+      Expr right = parsePrimary();
+      switch (op.kind()) {
+        case STAR -> expr = new MulExpr(expr, right);
+        case SLASH -> expr = new DivExpr(expr, right);
+        default ->
+            throw new RuntimeException("Parse Error in parseTerm(): unexpected token: " + peek());
+      }
+    }
+    return expr;
+  }
+
+  // primary ::= '-' INT | '-' '(' eform ')' | INT | '(' eform ')'
   protected Expr parsePrimary() {
+    // '-' INT | '-' '(' expr ')'
+    if (check(MINUS)) {
+      match(MINUS);
+      if (check(LPAREN)) {
+        match(LPAREN);
+        Expr expr = parseEform();
+        match(RPAREN);
+        return new SubExpr(new IntLiteral(0), expr);
+      }
+      Token t = match(INT);
+      return new IntLiteral(Integer.parseInt("-" + t.lexeme()));
+    }
+    /*if (check(MINUS)) {
+      match(MINUS);
+      return parsePrimary();
+    }*/
+
+    // '(' eform ')'
+    if (check(LPAREN)) {
+      match(LPAREN);
+      Expr expr = parseEform();
+      match(RPAREN);
+      return expr;
+    }
+
+    // INT
     if (check(INT)) {
       Token t = match(INT);
       return new IntLiteral(Integer.parseInt(t.lexeme()));
-    }
-
-    if (check(LPAREN)) {
-      match(LPAREN);
-      Expr expr = parseExpr();
-      match(RPAREN);
-      return expr;
     }
 
     throw new RuntimeException("Parse Error in parsePrimary(): unexpected token: " + peek());

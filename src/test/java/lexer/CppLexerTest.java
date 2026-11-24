@@ -12,8 +12,8 @@ class CppLexerTest {
 
   @Test
   void testScanWithoutWhitespace() {
-    CppLexer cppL = new CppLexer();
-    List<Token> tokens = cppL.scan("123\0");
+    CexprLexer cppL = new CexprLexer();
+    List<Token> tokens = cppL.scan("123");
 
     assertEquals(
         2, tokens.size(), "Es sollten genau zwei Tokens (INT und EOF) zurückgegeben werden.");
@@ -24,8 +24,8 @@ class CppLexerTest {
 
   @Test
   void testScanWithWhitespaceBeforeToken() {
-    CppLexer cppL = new CppLexer();
-    List<Token> tokens = cppL.scan("   456\0");
+    CexprLexer cppL = new CexprLexer();
+    List<Token> tokens = cppL.scan("   456");
 
     // Erwartet: Whitespace wird übersprungen, Token(INT, "456") gefolgt von EOF
     assertEquals(2, tokens.size(), "Whitespace vor dem Token sollte ignoriert werden.");
@@ -36,8 +36,8 @@ class CppLexerTest {
 
   @Test
   void testScanWhitespaceFollowedByEof() {
-    CppLexer cppL = new CppLexer();
-    List<Token> tokens = cppL.scan("   \0");
+    CexprLexer cppL = new CexprLexer();
+    List<Token> tokens = cppL.scan("   ");
 
     // Erwartet: Nur Whitespace bis zum Dateiende führt direkt zu EOF
     assertEquals(1, tokens.size(), "Nur Whitespace sollte direkt ein EOF-Token erzeugen.");

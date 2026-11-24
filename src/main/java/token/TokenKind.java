@@ -6,5 +6,7 @@ public enum TokenKind {
   LPAREN,
   RPAREN,
   INT,
+  STAR,
+  SLASH,
   EOF
 }

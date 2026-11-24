@@ -1,0 +1,23 @@
+- KONKRETE SYNTAX
+eform   ::= primary (('+' | '-') primary)*
+primary ::= INT | '(' eform ')'
+INT     ::= [0-9]+
+cint    ::= eform EOF
+
+---
+
+eform   ::= term (('+' | '-') term)*
+term    ::= primary (('*' | '/') primary)*
+primary ::= '-' INT | '-' '(' eform ')'
+cexpr   ::= eform EOF
+
+
+
+- ABSTRAKTE SYNTAX
+Expr = IntLiteral(Int) | AddExpr(Expr, Expr) | SubExpr(Expr, Expr)
+Cint = Expr
+
+---
+
+Expr = MulExpr(Expr, Expr) | DivExpr(Expr, Expr)
+Cexpr = Expr
