@@ -1,11 +1,49 @@
 import expr.*;
+import token.Token;
+import token.TokenKind;
 
-import java.util.List;
+import static token.TokenKind.MINUS;
+import static token.TokenKind.PLUS;
 
 public class CppAstBuilderCexpr extends CppBaseVisitor<Object> {
   @Override
   public Expr visitCexpr(CppParser.CexprContext ctx) {
     return asExpr(visit(ctx.eform()));
+  }
+
+  @Override
+  public Expr visitEform(CppParser.EformContext ctx) {
+    Expr expr = asExpr(visit(ctx.term(0)));
+
+    for (int i = 1; i < ctx.term().size(); i++) {
+      // 2*i-1 -> 0,3,5,7...
+      String op = ctx.getChild(2*i-1).getText();
+      Expr right = asExpr(visit(ctx.term(i)));
+      switch (op) {
+        case "+" -> expr = new AddExpr(expr, right);
+        case "-" -> expr = new SubExpr(expr, right);
+        default -> throw new RuntimeException("Expected ['+', '-'] actual [" + op + "]");
+      }
+    }
+
+    return expr;
+  }
+
+  public Expr visitTerm(CppParser.TermContext ctx) {
+    Expr expr = asExpr(visit(ctx.primary(0)));
+
+    for (int i = 1; i < ctx.primary().size(); i++) {
+      // 2*i-1 -> 0,3,5,7...
+      String op = ctx.getChild(2*i-1).getText();
+      Expr right = asExpr(visit(ctx.primary(i)));
+      switch (op) {
+        case "*" -> expr = new MulExpr(expr, right);
+        case "/" -> expr = new DivExpr(expr, right);
+        default -> throw new RuntimeException("Expected ['*', '/'] actual [" + op + "]");
+      }
+    }
+
+    return expr;
   }
 
   @Override
@@ -15,41 +53,16 @@ public class CppAstBuilderCexpr extends CppBaseVisitor<Object> {
   }
 
   @Override
-  public Expr visitAddExpr(CppParser.AddExprContext ctx) {
-    List<Expr> ops = ctx.eform().stream().map(this::visit).map(this::asExpr).toList();
-    return ops.stream().reduce(AddExpr::new).orElseThrow();
-  }
-
-  @Override
-  public Expr visitSubExpr(CppParser.SubExprContext ctx) {
-    List<Expr> ops = ctx.eform().stream().map(this::visit).map(this::asExpr).toList();
-    return ops.stream().reduce(SubExpr::new).orElseThrow();
-  }
-
-  @Override
-  public Expr visitMulExpr(CppParser.MulExprContext ctx) {
-    List<Expr> ops = ctx.eform().stream().map(this::visit).map(this::asExpr).toList();
-    return ops.stream().reduce(MulExpr::new).orElseThrow();
-  }
-
-  @Override
-  public Expr visitDivExpr(CppParser.DivExprContext ctx) {
-    List<Expr> ops = ctx.eform().stream().map(this::visit).map(this::asExpr).toList();
-    return ops.stream().reduce(DivExpr::new).orElseThrow();
-  }
-
-  @Override
-  public Expr visitParenExpr(CppParser.ParenExprContext ctx) {
+  public Expr visitParen(CppParser.ParenContext ctx) {
     return asExpr(visit(ctx.eform()));
   }
 
   @Override
-  public Expr visitUnaryMinusExpr(CppParser.UnaryMinusExprContext ctx) {
-    return new SubExpr(new IntLiteral(0), asExpr(visit(ctx.atom())));
+  public Expr visitUnaryMinus(CppParser.UnaryMinusContext ctx) {
+    return new SubExpr(new IntLiteral(0), asExpr(visit(ctx.primary())));
   }
 
   public Expr asExpr(Object o) {
     return (Expr) o;
   }
 }
-

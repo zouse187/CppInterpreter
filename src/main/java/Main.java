@@ -12,17 +12,15 @@ import values.Value;
 
 public class Main {
   static void main(String... args) throws IOException, URISyntaxException {
-    String source = "4 - -4";
+    String source = "8/(4/2) - 2 + 5";
 
     List<Token> tokens = new CexprLexer().scan(source);
     Expr ast = new CexprParser().parse(tokens);
 
     Value result = new InterpreterCexpr().eval(ast);
-    // IO.println(result);
+    IO.println(result);
 
-
-
-    String antlrSource = "2-(5-3)";
+    String antlrSource = "8/(4/2) - 2 + 5";
 
     var input = CharStreams.fromString(antlrSource);
     var lexer = new CppLexer(input);
