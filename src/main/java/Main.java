@@ -12,17 +12,17 @@ import values.Value;
 
 public class Main {
   static void main(String... args) throws IOException, URISyntaxException {
-    String source = "4 / 2 + 5 * 5";
+    String source = "4 - -4";
 
     List<Token> tokens = new CexprLexer().scan(source);
     Expr ast = new CexprParser().parse(tokens);
 
     Value result = new InterpreterCexpr().eval(ast);
-    IO.println(result);
+    // IO.println(result);
 
 
 
-    String antlrSource = "1 + 5";
+    String antlrSource = "2-(5-3)";
 
     var input = CharStreams.fromString(antlrSource);
     var lexer = new CppLexer(input);
@@ -30,5 +30,11 @@ public class Main {
 
     var parser = new CppParser(antlrTokens);
     var tree = parser.cexpr();
+
+    var builder = new CppAstBuilderCexpr();
+    var antlrAst = builder.visitCexpr(tree);
+
+    Value result2 = new InterpreterCexpr().eval(antlrAst);
+    IO.println(result2);
   }
 }
